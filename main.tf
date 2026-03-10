@@ -2,18 +2,60 @@ provider "aws" {
   region = var.aws_region
 }
 
+# VPC
 resource "aws_vpc" "main" {
   cidr_block = "172.16.0.0/16"
-  instance_tenancy = "default"
+
   tags = {
-    Name = "main"
+    Name = "main-vpc"
   }
 }
 
-#Create security group with firewall rules
+# Subnet
+resource "aws_subnet" "main" {
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = "172.16.1.0/24"
+  map_public_ip_on_launch = true
+
+  tags = {
+    Name = "main-subnet"
+  }
+}
+
+# Internet Gateway
+resource "aws_internet_gateway" "gw" {
+  vpc_id = aws_vpc.main.id
+
+  tags = {
+    Name = "main-igw"
+  }
+}
+
+# Route Table
+resource "aws_route_table" "main" {
+  vpc_id = aws_vpc.main.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.gw.id
+  }
+
+  tags = {
+    Name = "main-route-table"
+  }
+}
+
+# Route Table Association
+resource "aws_route_table_association" "main" {
+  subnet_id      = aws_subnet.main.id
+  route_table_id = aws_route_table.main.id
+}
+
+# Security Group
 resource "aws_security_group" "jenkins-sg-2022" {
   name        = var.security_group
-  description = "security group for Ec2 instance"
+  description = "Security group for EC2 instance"
+  vpc_id      = aws_vpc.main.id
 
   ingress {
     from_port   = 8080
@@ -22,14 +64,13 @@ resource "aws_security_group" "jenkins-sg-2022" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
- ingress {
+  ingress {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
- # outbound from jenkis server
   egress {
     from_port   = 0
     to_port     = 65535
@@ -37,35 +78,39 @@ resource "aws_security_group" "jenkins-sg-2022" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags= {
+  tags = {
     Name = var.security_group
   }
 }
 
+# EC2 Instance
 resource "aws_instance" "myFirstInstance" {
   ami           = var.ami_id
-  key_name = var.key_name
   instance_type = var.instance_type
-  vpc_security_group_ids = [aws_security_group.jenkins-sg-2022.id]
+  key_name      = var.key_name
 
-  # Set root volume size to 20 GB
+  subnet_id = aws_subnet.main.id
+
+  vpc_security_group_ids = [
+    aws_security_group.jenkins-sg-2022.id
+  ]
+
   root_block_device {
-    volume_size = 20
-    volume_type = "gp3"
+    volume_size           = 20
+    volume_type           = "gp3"
     delete_on_termination = true
   }
 
-  tags= {
+  tags = {
     Name = var.tag_name
   }
 }
 
-# Create Elastic IP address
+# Elastic IP
 resource "aws_eip" "myFirstInstance" {
- // vpc      = true
   instance = aws_instance.myFirstInstance.id
-tags= {
+
+  tags = {
     Name = "my_elastic_ip"
   }
 }
-
