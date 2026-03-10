@@ -1,6 +1,6 @@
 terraform {
   backend "s3" {
-    bucket = "mydev-project-terraform-sample-batch-35"
+    bucket = "young-minds-app-virginai"
     key = "main"
     region = "us-east-1"
     dynamodb_table = "my-dynamodb-table"
