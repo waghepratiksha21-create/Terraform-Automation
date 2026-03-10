@@ -10,7 +10,7 @@ variable "key_name" {
 
 variable "instance_type" { 
     description = "instance type for ec2" 
-    default     =  "m8i-flex.large" 
+    default     =  "m7i-flex.large" 
 }
 
 variable "security_group" { 
