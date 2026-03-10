@@ -7,6 +7,11 @@ pipeline {
             choices: ['plan', 'apply'],
             description: 'Select the action to perform'
         )
+        string{
+            name:"BRANCH"
+            defaultvalue":"main",
+            description: 'Branch to buid (e.g, main,feature/my-branch)'
+        }
     }
     stages {
         stage('Checkout') {
@@ -41,3 +46,4 @@ pipeline {
         }
     }
 }
+
